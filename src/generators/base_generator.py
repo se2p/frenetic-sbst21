@@ -13,8 +13,7 @@ from code_pipeline.tests_generation import RoadTestFactory
 
 class BaseGenerator(ABC):
 
-    def __init__(self, time_budget=None, executor=None, map_size=None, strict_father=False):
-        self.time_budget = time_budget
+    def __init__(self, executor=None, map_size=None, strict_father=False):
         self.executor = executor
         self.map_size = map_size
         self.df = pd.DataFrame()

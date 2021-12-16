@@ -10,7 +10,7 @@ class CustomFrenetGenerator(BaseFrenetGenerator):
         Generates tests using the frenet framework to determine curvatures.
     """
 
-    def __init__(self, time_budget=None, executor=None, map_size=None, kill_ancestors=1, strict_father=True,
+    def __init__(self, executor=None, map_size=None, kill_ancestors=1, strict_father=True,
                  random_budget=3600, crossover_candidates=20, crossover_frequency=0):
         # Spending 20% of the time on random generation
         # Set this value to 1.0 to generate fully random results.
@@ -42,7 +42,7 @@ class CustomFrenetGenerator(BaseFrenetGenerator):
             self.frenet_step = 10
             self.number_of_points = min(map_size // self.frenet_step, self.max_length)
 
-        super().__init__(time_budget=time_budget, executor=executor, map_size=map_size, strict_father=strict_father)
+        super().__init__(executor=executor, map_size=map_size, strict_father=strict_father)
 
     def start(self):
         self.generate_initial_population()
@@ -50,8 +50,9 @@ class CustomFrenetGenerator(BaseFrenetGenerator):
         sleep(10)
 
     def generate_initial_population(self):
-        while self.executor.get_remaining_time() > (self.time_budget - self.random_gen_budget):
-            log.info("Random generation. Remaining time %s", self.executor.get_remaining_time())
+        time_budget = self.executor.time_budget.time_budget if self.executor.time_budget.time_budget is not None else self.executor.time_budget.generation_budget
+        while self.executor.time_budget.get_remaining_real_time() > (time_budget - self.random_gen_budget):
+            log.info("Random generation. Remaining time %s", self.executor.time_budget.get_remaining_time())
             kappas = self.generate_random_test()
             self.execute_frenet_test(kappas, frenet_step=self.frenet_step)
         return
@@ -59,7 +60,7 @@ class CustomFrenetGenerator(BaseFrenetGenerator):
     def generate_mutants(self):
         # Iterating the tests according to the value of the min_oob_distance (closer to fail).
         self.recent_count = 0
-        while self.executor.get_remaining_time() > 0:
+        while not self.executor.is_over():
             if 0.0 in set(self.df['visited']) or 1.0 in set(self.df['visited']):
                 # TODO: The values are become float if there is a nan due to ERROR.
                 log.info('Converting visited column to boolean...')
@@ -271,6 +272,6 @@ class CustomFrenetGenerator(BaseFrenetGenerator):
 
 class Frenetic(CustomFrenetGenerator):
     def __init__(self, time_budget=None, executor=None, map_size=None):
-        super().__init__(time_budget=time_budget, executor=executor, map_size=map_size,
+        super().__init__(executor=executor, map_size=map_size,
                          kill_ancestors=0, strict_father=False, random_budget=3600,
                          crossover_candidates=20, crossover_frequency=40)
